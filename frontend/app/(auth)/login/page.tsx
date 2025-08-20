@@ -1,43 +1,63 @@
-"use client"
+"use client";
 
-import type React from "react"
-
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Eye, EyeOff } from "lucide-react"
+import type React from "react";
+import { signIn } from "next-auth/react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-  })
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      router.push("/swipe")
-    }, 1000)
-  }
+    try {
+      const res = await signIn("credentials", {
+        redirect: false,
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (res?.error) {
+        alert("Invalid email or password"); // replace with UI error if needed
+      } else if (res?.ok) {
+        router.push("/swipe"); // redirect after successful login
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
-    }))
-  }
+    }));
+  };
 
   return (
     <Card className="w-full shadow-lg border-0 bg-card">
@@ -88,7 +108,11 @@ export default function LoginPage() {
               </Button>
             </div>
           </div>
-          <Button type="submit" className="w-full rounded-xl" disabled={isLoading}>
+          <Button
+            type="submit"
+            className="w-full rounded-xl"
+            disabled={isLoading}
+          >
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
@@ -98,12 +122,18 @@ export default function LoginPage() {
             <Separator className="w-full" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+            <span className="bg-card px-2 text-muted-foreground">
+              Or continue with
+            </span>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="outline" className="rounded-xl bg-transparent" disabled>
+          <Button
+            variant="outline"
+            className="rounded-xl bg-transparent"
+            disabled
+          >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -124,8 +154,16 @@ export default function LoginPage() {
             </svg>
             Google
           </Button>
-          <Button variant="outline" className="rounded-xl bg-transparent" disabled>
-            <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+          <Button
+            variant="outline"
+            className="rounded-xl bg-transparent"
+            disabled
+          >
+            <svg
+              className="mr-2 h-4 w-4"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
             </svg>
             Facebook
@@ -135,7 +173,10 @@ export default function LoginPage() {
       <CardFooter className="flex flex-col space-y-2">
         <div className="text-sm text-center text-muted-foreground">
           Don't have an account?{" "}
-          <Link href="/auth/signup" className="text-primary hover:underline font-medium">
+          <Link
+            href="/auth/signup"
+            className="text-primary hover:underline font-medium"
+          >
             Sign up
           </Link>
         </div>
@@ -146,5 +187,5 @@ export default function LoginPage() {
         </div>
       </CardFooter>
     </Card>
-  )
+  );
 }
