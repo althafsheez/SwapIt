@@ -1,63 +1,104 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Eye, EyeOff } from "lucide-react"
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function SignUpPage() {
-  const router = useRouter()
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
     agreeToTerms: false,
-  })
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords don't match")
-      return
+      alert("Passwords don't match");
+      return;
     }
     if (!formData.agreeToTerms) {
-      alert("Please agree to the terms and conditions")
-      return
+      alert("Please agree to the terms and conditions");
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      router.push("/swipe")
-    }, 1000)
-  }
+    try {
+      // Send POST request to register endpoint
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // Automatically log the user in
+        const signInRes = await signIn("credentials", {
+          email: formData.email,
+          password: formData.password,
+          redirect: false,
+        });
+
+        if (signInRes?.ok) {
+          router.push("/swipe");
+        } else {
+          alert("Login failed after signup");
+        }
+      } else {
+        alert(data.error || "Signup failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
-    }))
-  }
+    }));
+  };
 
   return (
     <Card className="w-full shadow-lg border-0 bg-card">
       <CardHeader className="space-y-1 text-center">
         <CardTitle className="text-2xl font-bold">Join SwapIt</CardTitle>
-        <CardDescription>Create your account and start swapping</CardDescription>
+        <CardDescription>
+          Create your account and start swapping
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -148,7 +189,12 @@ export default function SignUpPage() {
             <Checkbox
               id="terms"
               checked={formData.agreeToTerms}
-              onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, agreeToTerms: checked as boolean }))}
+              onCheckedChange={(checked) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  agreeToTerms: checked as boolean,
+                }))
+              }
             />
             <Label htmlFor="terms" className="text-sm text-muted-foreground">
               I agree to the{" "}
@@ -162,7 +208,11 @@ export default function SignUpPage() {
             </Label>
           </div>
 
-          <Button type="submit" className="w-full rounded-xl" disabled={isLoading}>
+          <Button
+            type="submit"
+            className="w-full rounded-xl"
+            disabled={isLoading}
+          >
             {isLoading ? "Creating account..." : "Create Account"}
           </Button>
         </form>
@@ -172,12 +222,18 @@ export default function SignUpPage() {
             <Separator className="w-full" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+            <span className="bg-card px-2 text-muted-foreground">
+              Or continue with
+            </span>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="outline" className="rounded-xl bg-transparent" disabled>
+          <Button
+            variant="outline"
+            className="rounded-xl bg-transparent"
+            disabled
+          >
             <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -198,8 +254,16 @@ export default function SignUpPage() {
             </svg>
             Google
           </Button>
-          <Button variant="outline" className="rounded-xl bg-transparent" disabled>
-            <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+          <Button
+            variant="outline"
+            className="rounded-xl bg-transparent"
+            disabled
+          >
+            <svg
+              className="mr-2 h-4 w-4"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path d="M24 12.073c0-6.627-5.373-12-12-5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
             </svg>
             Facebook
@@ -209,11 +273,14 @@ export default function SignUpPage() {
       <CardFooter className="flex flex-col space-y-2">
         <div className="text-sm text-center text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/auth/login" className="text-primary hover:underline font-medium">
+          <Link
+            href="/auth/login"
+            className="text-primary hover:underline font-medium"
+          >
             Sign in
           </Link>
         </div>
       </CardFooter>
     </Card>
-  )
+  );
 }
