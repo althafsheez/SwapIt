@@ -208,8 +208,8 @@ export default function DashboardPage() {
       <Card className="overflow-hidden">
         <CardContent className="p-0">
           <div className="flex gap-4">
-            <div className="w-24 h-24 flex-shrink-0">
-              <img src={item.image || "/placeholder.svg"} alt={item.title} className="w-full h-full object-cover" />
+            <div className="w-24 h-24 flex-shrink-0 bg-gray-50 flex items-center justify-center pl-2">
+              <img src={item.image || "/placeholder.svg"} alt={item.title} className="w-full h-full object-contain" />
             </div>
             <div className="flex-1 p-4 min-w-0">
               <div className="flex items-start justify-between gap-2">

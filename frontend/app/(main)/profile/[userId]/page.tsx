@@ -65,6 +65,23 @@ export default function ProfilePage() {
           </Button>
         </div>
 
+        
+        {/* Static Map */}
+        <div className="flex justify-center">
+          <div className="h-64 w-[85%] rounded-xl overflow-hidden shadow">
+            <iframe
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              src={`https://www.google.com/maps?q=${encodeURIComponent(
+                user.location
+              )}&output=embed`}
+            />
+          </div>
+        </div>
+
         {/* User Stats */}
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center">
