@@ -1,9 +1,15 @@
+
 from django.db import models
-from cloudinary.models import CloudinaryField
 
-class UserProfile(models.Model):
-    name = models.CharField(max_length=100)
-    profile_image = CloudinaryField('image')
+class NextAuthUser(models.Model):
+    id = models.AutoField(primary_key=True)
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
 
-    def __str__(self):
-        return self.name
+    class Meta:
+        db_table = '"User"'   # 👈 important: match exact Postgres table name
+        managed = False       # Django will not try to create/drop this table
+
+    def _str_(self):
+        return self.email
