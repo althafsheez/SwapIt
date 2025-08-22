@@ -10,7 +10,7 @@ class Listing(models.Model):
     user = models.ForeignKey(NextAuthUser, on_delete=models.CASCADE, related_name="listings")
     title = models.CharField(max_length=255)
     description = models.TextField()
-    image = CloudinaryField("image", blank=True, null=True)  # <-- cloudinary
+    image = CloudinaryField("image", default="https://res.cloudinary.com/demo/image/upload/placeholder.png")  # <-- cloudinary
     location = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 

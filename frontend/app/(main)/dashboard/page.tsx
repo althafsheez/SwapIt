@@ -1,5 +1,6 @@
 "use client"
-import { useState } from "react"
+
+import { useState, useEffect } from "react"
 import type React from "react"
 
 import { Button } from "@/components/ui/button"
@@ -12,8 +13,15 @@ import { Badge } from "@/components/ui/badge"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { ArrowLeft, Plus, MoreVertical, Edit, Trash2, DollarSign } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { mockItems } from "@/lib/placeholders"
-import type { Item } from "@/lib/placeholders"
+
+interface Item {
+  id: string
+  title: string
+  description: string
+  image?: string
+  status: string
+  location: string
+}
 
 const categories = [
   "Electronics",
@@ -28,40 +36,92 @@ const categories = [
 ]
 
 export default function DashboardPage() {
+  
   const router = useRouter()
+  const [userItems, setUserItems] = useState<Item[]>([])
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingItem, setEditingItem] = useState<Item | null>(null)
-  const [userItems, setUserItems] = useState<Item[]>(mockItems.filter((item) => item.ownerId === "2"))
-
-  const currentUserId = "2"
-
-  const handleAddItem = (newItem: Omit<Item, "id" | "ownerId" | "ownerName" | "ownerLocation">) => {
-    const item: Item = {
-      ...newItem,
-      id: Date.now().toString(),
-      ownerId: currentUserId,
-      ownerName: "You",
-      ownerLocation: "Your Location",
-    }
-    setUserItems((prev) => [item, ...prev])
-    setShowAddForm(false)
-  }
-
-  const handleEditItem = (updatedItem: Item) => {
-    setUserItems((prev) => prev.map((item) => (item.id === updatedItem.id ? updatedItem : item)))
-    setEditingItem(null)
-  }
-
-  const handleDeleteItem = (itemId: string) => {
-    setUserItems((prev) => prev.filter((item) => item.id !== itemId))
-  }
 
   const stats = {
     listedItems: userItems.length,
     activeMatches: 3,
     swipesThisWeek: 47,
   }
+  
 
+  // ---------- Fetch listings ----------
+  useEffect(() => {
+    fetch("http://localhost:8000/api/listings/")
+      .then(res => res.json())
+      .then(data => setUserItems(data))
+      .catch(err => console.error(err))
+  }, [])
+
+  // ---------- Add new item ----------
+  const handleAddItem = async (newItem: Omit<Item, "id" | "status">) => {
+    try {
+      const res = await fetch("http://localhost:8000/api/listings/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: newItem.title,
+          description: newItem.description,
+          category: newItem.category,
+          estimatedValue: newItem.estimatedValue,
+          location: newItem.location || "Unknown",
+          image: newItem.image || "",
+        }),
+      })
+      if (res.ok) {
+        const created = await res.json()
+        setUserItems((prev) => [created, ...prev])
+        setShowAddForm(false)
+      } else {
+        alert("Failed to create item")
+      }
+    } catch (err) {
+      console.error(err)
+      alert("Error creating item")
+    }
+  }
+
+  // ---------- Edit item ----------
+  const handleEditItem = async (updatedItem: Item) => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/listings/${updatedItem.id}/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedItem),
+      })
+      if (res.ok) {
+        const saved = await res.json()
+        setUserItems((prev) => prev.map((i) => (i.id === saved.id ? saved : i)))
+        setEditingItem(null)
+      } else {
+        alert("Failed to update item")
+      }
+    } catch (err) {
+      console.error(err)
+      alert("Error updating item")
+    }
+  }
+
+  // ---------- Delete item ----------
+  const handleDeleteItem = async (itemId: string) => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/listings/${itemId}/`, { method: "DELETE" })
+      if (res.ok) {
+        setUserItems((prev) => prev.filter((i) => i.id !== itemId))
+      } else {
+        alert("Failed to delete item")
+      }
+    } catch (err) {
+      console.error(err)
+      alert("Error deleting item")
+    }
+  }
+}
+  // ---------- Item Form ----------
   const ItemForm = ({
     item,
     onSubmit,
@@ -78,8 +138,8 @@ export default function DashboardPage() {
       estimatedValue: item?.estimatedValue || 0,
       image: item?.image || "",
       status: item?.status || "active",
+      location: item?.location || "",
     })
-    const [imagePreview, setImagePreview] = useState<string>(item?.image || "")
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -93,17 +153,12 @@ export default function DashboardPage() {
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault()
       setIsSubmitting(true)
-      setTimeout(() => {
-        if (item) {
-          onSubmit({ ...item, ...formData })
-        } else {
-          onSubmit(formData)
-        }
-        setIsSubmitting(false)
-      }, 1000)
+      await onSubmit({ ...item, ...formData })
+      setIsSubmitting(false)
     }
 
-    const isValid = formData.title && formData.description && formData.category && formData.estimatedValue > 0
+    const isValid =
+      formData.title && formData.description && formData.category && formData.estimatedValue > 0
 
     return (
       <div className="p-4">
@@ -167,6 +222,16 @@ export default function DashboardPage() {
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input
+                  id="location"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleInputChange}
+                  placeholder="Your location"
+                />
+              </div>
               <div className="flex gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={onCancel} className="flex-1 bg-transparent">
                   Cancel
@@ -182,15 +247,8 @@ export default function DashboardPage() {
     )
   }
 
-  const ItemCard = ({
-    item,
-    onEdit,
-    onDelete,
-  }: {
-    item: Item
-    onEdit: () => void
-    onDelete: () => void
-  }) => {
+  // ---------- Item Card ----------
+  const ItemCard = ({ item }: { item: Item }) => {
     const getStatusColor = (status: string) => {
       switch (status) {
         case "active":
@@ -234,11 +292,11 @@ export default function DashboardPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={onEdit}>
+                    <DropdownMenuItem onClick={() => setEditingItem(item)}>
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={onDelete} className="text-destructive">
+                    <DropdownMenuItem onClick={() => handleDeleteItem(item.id)} className="text-destructive">
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
                     </DropdownMenuItem>
@@ -252,6 +310,7 @@ export default function DashboardPage() {
     )
   }
 
+  // ---------- Render Form or Dashboard ----------
   if (showAddForm || editingItem) {
     return (
       <div className="min-h-screen bg-background">
@@ -300,6 +359,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="p-4 space-y-6">
+        {/* Stats */}
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center p-4 rounded-2xl bg-card">
             <div className="text-2xl font-bold text-primary">{stats.listedItems}</div>
@@ -315,6 +375,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* Items List */}
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Your Items</h2>
           {userItems.length === 0 ? (
@@ -334,12 +395,7 @@ export default function DashboardPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4">
               {userItems.map((item) => (
-                <ItemCard
-                  key={item.id}
-                  item={item}
-                  onEdit={() => setEditingItem(item)}
-                  onDelete={() => handleDeleteItem(item.id)}
-                />
+                <ItemCard key={item.id} item={item} />
               ))}
             </div>
           )}
@@ -347,4 +403,4 @@ export default function DashboardPage() {
       </div>
     </div>
   )
-}
+
