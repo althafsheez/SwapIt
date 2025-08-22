@@ -7,13 +7,63 @@ import { ArrowLeft, MapPin, Phone, MessageCircle } from "lucide-react"
 import { useRouter, useParams } from "next/navigation"
 import { mockUsers, mockItems } from "@/lib/placeholders"
 
+import NextAuth from "next-auth"
+import { useSession } from "next-auth/react"
+import { useEffect, useState } from "react"
+
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string
+      name: string
+      email: string
+      image?: string
+    }
+  }
+}
+
 export default function ProfilePage() {
   const router = useRouter()
   const params = useParams()
   const userId = params.userId as string
 
-  const user = mockUsers.find((u) => u.id === userId)
-  const userItems = mockItems.filter((item) => item.ownerId === userId)
+  const { data: session } = useSession()
+  const [user, setUser] = useState<any>(null)
+  const [items, setItems] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     if (!userId) return
+
+  //     try {
+  //       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${userId}/`, {
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           "X-User-ID": session?.user?.id || "" // frontend sends logged-in user ID
+  //         },
+  //       })
+  //       if (!res.ok) throw new Error("Failed to fetch user")
+  //       const data = await res.json()
+  //       setUser(data.user)
+  //       setItems(data.items)
+  //     } catch (err) {
+  //       console.error(err)
+  //     } finally {
+  //       setLoading(false)
+  //     }
+  //   }
+
+  //   fetchData()
+  // }, [userId, session])
+
+    if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading profile...</p>
+      </div>
+    )
+  }
 
   if (!user) {
     return (
@@ -38,14 +88,20 @@ export default function ProfilePage() {
         {/* User Info */}
         <div className="text-center space-y-4">
           <Avatar className="h-24 w-24 mx-auto">
-            <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
-            <AvatarFallback className="text-2xl">
-              {user.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
-            </AvatarFallback>
-          </Avatar>
+            
+  {user.avatar ? (
+    <AvatarImage src={user.avatar} alt={user.name} />
+  ) : (
+    <AvatarFallback className="bg-gray-300 text-gray-700 flex items-center justify-center rounded-full text-2xl">
+      {user?.name
+  ?.split(" ")
+  .map((n: any[]) => n[0])
+  .join("")}
+
+    </AvatarFallback>
+  )}
+</Avatar>
+
           <div>
             <h2 className="text-2xl font-bold">{user.name}</h2>
             <div className="flex items-center justify-center gap-4 mt-2 text-sm text-muted-foreground">
@@ -102,7 +158,7 @@ export default function ProfilePage() {
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Items Available</h3>
           <div className="grid grid-cols-2 gap-4">
-            {userItems.map((item) => (
+            {items.map((item) => (
               <Card key={item.id} className="overflow-hidden">
                 <div className="aspect-square relative">
                   <img src={item.image || "/placeholder.svg"} alt={item.title} className="w-full h-full object-cover" />

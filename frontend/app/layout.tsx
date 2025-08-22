@@ -3,6 +3,9 @@ import type { Metadata } from "next"
 import { Geist } from "next/font/google"
 import { Manrope } from "next/font/google"
 import "./globals.css"
+import { SessionProvider } from "next-auth/react"
+import { Providers } from "./providers"
+
 
 const geist = Geist({
   subsets: ["latin"],
@@ -29,7 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geist.variable} ${manrope.variable} antialiased`}>
-      <body className="min-h-screen bg-background font-sans">{children}</body>
+      <body className="min-h-screen bg-background font-sans">
+  <Providers>{children}</Providers>
+</body>
+
     </html>
   )
 }
